@@ -1,7 +1,7 @@
 ﻿using MassTransit;
 using Messages.Order.Command;
 using Messages.Order.Event;
-using OpenTelemetry.Trace;
+
 using Microsoft.Extensions.Logging; // Add this using statement
 using System;
 using System.Diagnostics;
@@ -12,12 +12,12 @@ namespace CardService.Consumer
     public class CheckOrderStateConsumer : IConsumer<ICheckOrderStateCommand>
     {
         private readonly ILogger<CheckOrderStateConsumer> _logger;
-        private readonly TracerProvider _tracerProvider;
 
-        public CheckOrderStateConsumer(ILogger<CheckOrderStateConsumer> logger, TracerProvider tracerProvider)
+
+        public CheckOrderStateConsumer(ILogger<CheckOrderStateConsumer> logger)
         {
             _logger = logger;
-            _tracerProvider = tracerProvider;
+
         }
 
         public async Task Consume(ConsumeContext<ICheckOrderStateCommand> context)
@@ -60,12 +60,6 @@ namespace CardService.Consumer
 
                 _logger.LogError(ex, "An exception occurred - OrderId: {OrderId}. Details: {@ExceptionDetails}", context.Message.OrderId, exceptionDetails);
 
-                // Additionally, capture the exception details in the OpenTelemetry span
-                var span = _tracerProvider.GetTracer("http-client")
-                    .StartActiveSpan("request");
-
-                span.SetAttribute("exception.message", ex.Message);
-                span.SetAttribute("exception.stackTrace", ex.StackTrace);
 
                 // Rethrow the exception if needed
                 throw;

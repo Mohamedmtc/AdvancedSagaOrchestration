@@ -1,18 +1,11 @@
 using MassTransit.Logging;
 using MassTransit;
-using OpenTelemetry;
-using OpenTelemetry.Exporter;
-using OpenTelemetry.Instrumentation.AspNetCore;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
-using Serilog;
+
 
 using OrderService;
 using System.Runtime.InteropServices;
 using System.Reflection.PortableExecutable;
-using Prometheus;
+
 using Core.RabbitMq.BusConfiguration;
 using MassTransit.AspNetCoreIntegration;
 
@@ -28,8 +21,6 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddCors();
 
 
-builder.Services.AddProblemDetails().AddExceptionHandler<GlobalExceptionHandler>();
-
 #region MassTransit
 builder.Services.AddMassTransit(cfg =>
 {
@@ -41,66 +32,6 @@ builder.Services.AddMassTransit(cfg =>
 
 
 
-
-#region Opentelemetry
-var serviceName = builder.Configuration.GetValue<string>("OTEL:ServiceName") ?? "";
-string endPoint = builder.Configuration.GetValue<string>("OTEL:Endpoint") ?? "";
-builder.Host.UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration
-            .ReadFrom.Configuration(hostingContext.Configuration)
-            .WriteTo.Console()
-            .WriteTo.OpenTelemetry(options =>
-            {
-                options.Endpoint = $"{endPoint}/v1/logs";
-                options.Protocol = Serilog.Sinks.OpenTelemetry.OtlpProtocol.GrpcProtobuf;
-                options.ResourceAttributes = new Dictionary<string, object>
-                {
-                    ["service.name"] = serviceName
-                };
-            }));
-Action<ResourceBuilder> appResourceBuilder =
-resource => resource
-.AddTelemetrySdk()
-.AddService(serviceName: serviceName)
-.AddAttributes(new Dictionary<string, object>
-{
-    ["host.name"] = Environment.MachineName,
-    ["os.description"] = RuntimeInformation.OSDescription,
-    ["deployment.environment"] = builder.Environment.EnvironmentName.ToLowerInvariant(),
-}); ;
-
-
-builder.Services.AddOpenTelemetry()
-    .ConfigureResource(appResourceBuilder)
-    .WithTracing(builder => builder
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddMassTransitInstrumentation()
-        .AddSource(DiagnosticHeaders.DefaultListenerName)
-        .AddSource("APITracing")
-                .AddOtlpExporter(options => options.Endpoint = new Uri(uriString: endPoint))
-
-    );
-//.WithMetrics(builder => builder
-//    .AddMeter("System.Net.Http")
-//    .AddMeter("Microsoft.AspNetCore.Hosting")
-//    .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
-//    .AddMeter("Microsoft.AspNetCore.Http.Connections")
-
-//    .AddRuntimeInstrumentation()
-//    .AddHttpClientInstrumentation()
-//    .AddAspNetCoreInstrumentation()
-// .AddPrometheusExporter()
-//    .AddOtlpExporter(options => options.Endpoint = new Uri(uriString: endPoint))); 
-
-
-//builder.Logging.AddOpenTelemetry(options =>
-//{
-//    options.AddOtlpExporter(options => options.Endpoint = new Uri(uriString: endPoint));
-//    options.IncludeFormattedMessage = true;
-//    options.IncludeScopes = true;
-//    options.ParseStateValues = true;
-//});
-#endregion
 
 
 var app = builder.Build();
@@ -114,10 +45,7 @@ app.UseCors(builder =>
 
 app.UseStatusCodePages();
 
-app.UseExceptionHandler();
 
-app.UseMiddleware<TraceIdMiddleware>();
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -128,9 +56,6 @@ app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
-app.UseHttpMetrics();
 app.MapControllers();
 
-app.UseMetricServer();
-//app.UseOpenTelemetryPrometheusScrapingEndpoint();
 app.Run();

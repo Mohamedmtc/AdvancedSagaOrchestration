@@ -1,4 +1,4 @@
-﻿using Serilog.Context;
+﻿
 using System.Diagnostics;
 
 namespace OrderService
@@ -17,10 +17,7 @@ namespace OrderService
 
             var traceId = Activity.Current?.Id ?? Guid.NewGuid().ToString("N");
             context.Response.Headers.TryAdd("TraceId", traceId);
-            using (LogContext.PushProperty("TraceId", traceId))
-            {
-                await _next(context);
-            }
+            await _next(context);
         }
     }
 }

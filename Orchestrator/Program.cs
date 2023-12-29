@@ -4,13 +4,11 @@ using MassTransit.AspNetCoreIntegration;
 using MassTransit.EntityFrameworkCoreIntegration;
 using MassTransit.Logging;
 using Microsoft.EntityFrameworkCore;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
+
 using Orchestrator.Presistance;
 
 using Orchestrator.StateMachine.Order;
-using Serilog;
+
 using System;
 using System.Reflection;
 
@@ -51,49 +49,6 @@ builder.Services.AddMassTransit(cfg =>
 //builder.Services.AddMassTransitHostedService(true);
 #endregion
 
-
-
-#region OpenTelemetry
-string servicename = builder.Configuration.GetValue<string>("Otlp:ServiceName") ?? "";
-string otlpENdPoint = builder.Configuration.GetValue<string>("Otlp:Endpoint") ?? "";
-builder.Host.UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration
-            .ReadFrom.Configuration(hostingContext.Configuration)
-            .WriteTo.Console()
-            .WriteTo.OpenTelemetry(options =>
-            {
-                options.Endpoint = $"{otlpENdPoint}/v1/logs";
-                options.Protocol = Serilog.Sinks.OpenTelemetry.OtlpProtocol.GrpcProtobuf;
-                options.ResourceAttributes = new Dictionary<string, object>
-                {
-                    ["service.name"] = servicename
-                };
-            }));
-
-
-
-
-Action<ResourceBuilder> appResourceBuilder =
-    resource => resource
-        .AddTelemetrySdk()
-        .AddService(builder.Configuration.GetValue<string>("Otlp:ServiceName") ?? "");
-
-builder.Services.AddOpenTelemetry()
-    .ConfigureResource(appResourceBuilder)
-    .WithTracing(builder => builder
-        .AddAspNetCoreInstrumentation()
-        .AddHttpClientInstrumentation()
-        .AddMassTransitInstrumentation()
-        .AddSource(DiagnosticHeaders.DefaultListenerName)
-        .AddSource("APITracing")
-        //.AddConsoleExporter()
-        .AddOtlpExporter(options => options.Endpoint = new Uri(otlpENdPoint))
-    )
-    .WithMetrics(builder => builder
-        .AddRuntimeInstrumentation()
-        .AddAspNetCoreInstrumentation()
-        .AddOtlpExporter(options => options.Endpoint = new Uri(otlpENdPoint)));
-
-#endregion
 
 
 
