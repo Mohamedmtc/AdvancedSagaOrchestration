@@ -1,5 +1,5 @@
 ﻿using Core.RabbitMq.ApiConfiguration;
-using GreenPipes;
+
 using MassTransit;
 using MassTransit.RabbitMqTransport;
 using Microsoft.Extensions.Configuration;

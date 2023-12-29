@@ -35,7 +35,7 @@ builder.Services.AddMassTransit(cfg =>
 {
     cfg.AddBus(provider => RabbitMqBus.ConfigureBusWebApi(provider, builder.Configuration));
 });
-builder.Services.AddMassTransitHostedService();
+//builder.Services.AddMassTransitHostedService();
 
 #endregion
 
@@ -43,8 +43,8 @@ builder.Services.AddMassTransitHostedService();
 
 
 #region Opentelemetry
-var serviceName = builder.Configuration.GetValue<string>("OTEL:ServiceName");
-string endPoint = builder.Configuration.GetValue<string>("OTEL:Endpoint");
+var serviceName = builder.Configuration.GetValue<string>("OTEL:ServiceName") ?? "";
+string endPoint = builder.Configuration.GetValue<string>("OTEL:Endpoint") ?? "";
 builder.Host.UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration
             .ReadFrom.Configuration(hostingContext.Configuration)
             .WriteTo.Console()
@@ -80,17 +80,17 @@ builder.Services.AddOpenTelemetry()
                 .AddOtlpExporter(options => options.Endpoint = new Uri(uriString: endPoint))
 
     );
-    //.WithMetrics(builder => builder
-    //    .AddMeter("System.Net.Http")
-    //    .AddMeter("Microsoft.AspNetCore.Hosting")
-    //    .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
-    //    .AddMeter("Microsoft.AspNetCore.Http.Connections")
+//.WithMetrics(builder => builder
+//    .AddMeter("System.Net.Http")
+//    .AddMeter("Microsoft.AspNetCore.Hosting")
+//    .AddMeter("Microsoft.AspNetCore.Server.Kestrel")
+//    .AddMeter("Microsoft.AspNetCore.Http.Connections")
 
-    //    .AddRuntimeInstrumentation()
-    //    .AddHttpClientInstrumentation()
-    //    .AddAspNetCoreInstrumentation()
-    // .AddPrometheusExporter()
-    //    .AddOtlpExporter(options => options.Endpoint = new Uri(uriString: endPoint))); 
+//    .AddRuntimeInstrumentation()
+//    .AddHttpClientInstrumentation()
+//    .AddAspNetCoreInstrumentation()
+// .AddPrometheusExporter()
+//    .AddOtlpExporter(options => options.Endpoint = new Uri(uriString: endPoint))); 
 
 
 //builder.Logging.AddOpenTelemetry(options =>

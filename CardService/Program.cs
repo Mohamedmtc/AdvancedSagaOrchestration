@@ -35,7 +35,7 @@ builder.Services.AddMassTransit(cfg =>
     cfg.AddBus(provider => RabbitMqBus.ConfigureBusWebApi(provider, builder.Configuration));
 
 });
-builder.Services.AddMassTransitHostedService();
+//builder.Services.AddMassTransitHostedService();
 #endregion
 
 #region Otlp
