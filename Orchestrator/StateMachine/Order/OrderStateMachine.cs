@@ -12,13 +12,13 @@ namespace Orchestrator.StateMachine.Order
     {
         private readonly ILogger<OrderStateMachine> _logger; // Add a logger field
 
-        public State OrderStarted { get; private set; }
-        public State OrderCancelled { get; private set; }
-        public State OrderFinished { get; private set; }
+        public State? OrderStarted { get; private set; }
+        public State? OrderCancelled { get; private set; }
+        public State? OrderFinished { get; private set; }
 
-        public Event<IOrderStartedEvent> OrderStartedEvent { get; private set; }
-        public Event<IOrderCanceledEvent> OrderCancelledEvent { get; private set; }
-        public Event<IOrderFinishedEvent> OrderFinishedEvent { get; private set; }
+        public Event<IOrderStartedEvent>? OrderStartedEvent { get; private set; }
+        public Event<IOrderCanceledEvent>? OrderCancelledEvent { get; private set; }
+        public Event<IOrderFinishedEvent>? OrderFinishedEvent { get; private set; }
 
         public OrderStateMachine(ILogger<OrderStateMachine> logger) // Inject the logger through the constructor
         {
@@ -33,27 +33,27 @@ namespace Orchestrator.StateMachine.Order
                When(OrderStartedEvent)
                 .Then(context =>
                 {
-                    context.Instance.OrderCreationDateTime = DateTime.Now;
-                    context.Instance.OrderId = context.Data.OrderId;
-                    context.Instance.PaymentCardNumber = context.Data.PaymentCardNumber;
-                    context.Instance.ProductName = context.Data.ProductName;
-                    context.Instance.IsCanceled = context.Data.IsCanceled;
+                    context.Saga.OrderCreationDateTime = DateTime.Now;
+                    context.Saga.OrderId = context.Message.OrderId;
+                    context.Saga.PaymentCardNumber = context.Message.PaymentCardNumber;
+                    context.Saga.ProductName = context.Message.ProductName;
+                    context.Saga.IsCanceled = context.Message.IsCanceled;
 
                     // Log the step
-                    _logger.LogInformation($"Order Started - OrderId: {context.Data.OrderId}");
+                    _logger.LogInformation($"Order Started - OrderId: {context.Message.OrderId}");
                 })
                .TransitionTo(OrderStarted)
-                .Publish(context => new CheckOrderStateCommand(context.Instance)));
+                .Publish(context => new CheckOrderStateCommand(context.Saga)));
 
             During(OrderStarted,
                When(OrderCancelledEvent)
                    .Then(context =>
                    {
-                       context.Instance.Exception = context.Data.ExceptionMessage;
-                       context.Instance.OrderCancelDateTime = DateTime.Now;
+                       context.Saga.Exception = context.Message.ExceptionMessage;
+                       context.Saga.OrderCancelDateTime = DateTime.Now;
 
                        // Log the step
-                       _logger.LogInformation($"Order Cancelled - OrderId: {context.Instance.OrderId}");
+                       _logger.LogInformation($"Order Cancelled - OrderId: {context.Message.OrderId}");
                    })
                     .TransitionTo(OrderCancelled));
 
@@ -61,10 +61,10 @@ namespace Orchestrator.StateMachine.Order
                 When(OrderFinishedEvent)
                     .Then(context =>
                     {
-                        context.Instance.OrderFinishedDateTime = DateTime.Now;
+                        context.Saga.OrderFinishedDateTime = DateTime.Now;
 
                         // Log the step
-                        _logger.LogInformation($"Order Finished - OrderId: {context.Instance.OrderId}");
+                        _logger.LogInformation($"Order Finished - OrderId: {context.Message.OrderId}");
                     })
                      .TransitionTo(OrderFinished)
                      .Finalize());

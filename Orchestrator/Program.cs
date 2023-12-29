@@ -28,12 +28,12 @@ builder.Services.AddSwaggerGen();
 #region MassTransit
 builder.Services.AddDbContext<OrchSagaDbContext>((provider, dbContextBuilder) =>
 {
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-dbContextBuilder.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
-{
-sqlOptions.MigrationsAssembly(typeof(OrchSagaDbContext).Assembly.FullName);
-sqlOptions.MigrationsHistoryTable($"__{nameof(OrchSagaDbContext)}");
-});
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    dbContextBuilder.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
+    {
+        sqlOptions.MigrationsAssembly(typeof(OrchSagaDbContext).Assembly.FullName);
+        sqlOptions.MigrationsHistoryTable($"__{nameof(OrchSagaDbContext)}");
+    });
 });
 
 builder.Services.AddMassTransit(cfg =>
@@ -48,14 +48,14 @@ builder.Services.AddMassTransit(cfg =>
 
     cfg.AddBus(provider => RabbitMqBus.ConfigureBusWebApi(provider, builder.Configuration));
 });
-builder.Services.AddMassTransitHostedService(); 
+//builder.Services.AddMassTransitHostedService(true);
 #endregion
 
 
 
 #region OpenTelemetry
-string servicename = builder.Configuration.GetValue<string>("Otlp:ServiceName");
-string otlpENdPoint = builder.Configuration.GetValue<string>("Otlp:Endpoint");
+string servicename = builder.Configuration.GetValue<string>("Otlp:ServiceName") ?? "";
+string otlpENdPoint = builder.Configuration.GetValue<string>("Otlp:Endpoint") ?? "";
 builder.Host.UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration
             .ReadFrom.Configuration(hostingContext.Configuration)
             .WriteTo.Console()
@@ -75,7 +75,7 @@ builder.Host.UseSerilog((hostingContext, loggerConfiguration) => loggerConfigura
 Action<ResourceBuilder> appResourceBuilder =
     resource => resource
         .AddTelemetrySdk()
-        .AddService(builder.Configuration.GetValue<string>("Otlp:ServiceName"));
+        .AddService(builder.Configuration.GetValue<string>("Otlp:ServiceName") ?? "");
 
 builder.Services.AddOpenTelemetry()
     .ConfigureResource(appResourceBuilder)

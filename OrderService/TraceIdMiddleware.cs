@@ -16,7 +16,7 @@ namespace OrderService
         {
 
             var traceId = Activity.Current?.Id ?? Guid.NewGuid().ToString("N");
-            context.Response.Headers.Add("TraceId", traceId);
+            context.Response.Headers.TryAdd("TraceId", traceId);
             using (LogContext.PushProperty("TraceId", traceId))
             {
                 await _next(context);

@@ -21,7 +21,7 @@ namespace OrderService
                 traceId
             );
 
-            httpContext.Response.Headers.Add("TraceId", traceId);
+            httpContext.Response.Headers.TryAdd("TraceId", traceId);
 
 
             var (statusCode, title, errors) = MapException(exception);
@@ -38,11 +38,11 @@ namespace OrderService
 
             return true;
         }
-        private static (int StatusCode, string Title, List<string> errorList) MapException(Exception exception)
+        private static (int StatusCode, string Title, List<string>? errorList) MapException(Exception exception)
         {
             return exception switch
             {
-                WebApiException => (StatusCodes.Status400BadRequest, exception.Message, (exception as WebApiException).Errors),
+                WebApiException webApiException => (StatusCodes.Status400BadRequest, exception.Message, webApiException.Errors),
                 _ => (StatusCodes.Status500InternalServerError, "We made a mistake but we are on it!", null)
             };
         }
