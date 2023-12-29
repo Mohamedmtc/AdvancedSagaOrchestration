@@ -1,7 +1,9 @@
 using Core.RabbitMq.BusConfiguration;
 using MassTransit;
 using MassTransit.AspNetCoreIntegration;
+using MassTransit.EntityFrameworkCoreIntegration;
 using MassTransit.Logging;
+using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -9,6 +11,8 @@ using Orchestrator.Presistance;
 
 using Orchestrator.StateMachine.Order;
 using Serilog;
+using System;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,18 +23,37 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+
+#region MassTransit
+builder.Services.AddDbContext<OrchSagaDbContext>((provider, dbContextBuilder) =>
+{
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+dbContextBuilder.UseSqlServer(connectionString, sqlServerOptionsAction: sqlOptions =>
+{
+sqlOptions.MigrationsAssembly(typeof(OrchSagaDbContext).Assembly.FullName);
+sqlOptions.MigrationsHistoryTable($"__{nameof(OrchSagaDbContext)}");
+});
+});
+
 builder.Services.AddMassTransit(cfg =>
 {
+    cfg.AddSagaStateMachine<OrderStateMachine, OrderStateData>()
+                .EntityFrameworkRepository(r =>
+                {
+                    r.ConcurrencyMode = ConcurrencyMode.Pessimistic; // or use Optimistic, which requires RowVersion
+                    r.ExistingDbContext<OrchSagaDbContext>();
 
-    cfg.AddSagaStateMachine<OrderStateMachine, OrderStateData>().InMemoryRepository();
+                });
 
     cfg.AddBus(provider => RabbitMqBus.ConfigureBusWebApi(provider, builder.Configuration));
 });
-builder.Services.AddMassTransitHostedService();
+builder.Services.AddMassTransitHostedService(); 
+#endregion
 
 
 
-
+#region OpenTelemetry
 string servicename = builder.Configuration.GetValue<string>("Otlp:ServiceName");
 string otlpENdPoint = builder.Configuration.GetValue<string>("Otlp:Endpoint");
 builder.Host.UseSerilog((hostingContext, loggerConfiguration) => loggerConfiguration
@@ -69,6 +92,10 @@ builder.Services.AddOpenTelemetry()
         .AddRuntimeInstrumentation()
         .AddAspNetCoreInstrumentation()
         .AddOtlpExporter(options => options.Endpoint = new Uri(otlpENdPoint)));
+
+#endregion
+
+
 
 
 var app = builder.Build();

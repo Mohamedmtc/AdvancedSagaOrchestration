@@ -10,6 +10,7 @@
 	  <PackageReference Include="MassTransit" Version="7.2.0.0" />
 	  <PackageReference Include="MassTransit.AspNetCore" Version="7.2.0.0" />
 	  <PackageReference Include="MassTransit.RabbitMQ" Version="7.2.0.0" />
+	  <PackageReference Include="MassTransit.EntityFrameworkCore" Version="7.2.0.0" />
 	  <PackageReference Include="MassTransit.RabbitMq.Extensions.Hosting" Version="1.0.29" />
   </ItemGroup>
 

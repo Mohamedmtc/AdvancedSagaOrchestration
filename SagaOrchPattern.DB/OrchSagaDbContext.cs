@@ -10,9 +10,6 @@ namespace Orchestrator.Presistance
     public class OrchSagaDbContext : DbContext
     {
         public DbSet<OrderStateData> OrderStateData { get; set; }
-
-
-
         public OrchSagaDbContext()
         {
         }
@@ -23,7 +20,7 @@ namespace Orchestrator.Presistance
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseSqlServer(@"Server=.; initial catalog=OrchSagaDb;integrated security=true;");
+            optionsBuilder.UseSqlServer(@"Server=.;Database=OrchestrationDB;integrated security=true;MultipleActiveResultSets=True;TrustServerCertificate=True;");
         }
     }
 }
