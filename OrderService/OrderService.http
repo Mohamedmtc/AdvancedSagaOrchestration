@@ -13,6 +13,6 @@ Content-Type: application/json
   "price": 1,
   "PaymentCardNumber": "1234-5678-9012-3456",
   "ProductName": "Example Product",
-  "IsCanceled":false
+  "IsCanceled":true
 }
 ###
